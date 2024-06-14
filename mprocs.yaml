@@ -1,0 +1,6 @@
+procs:
+  fe-shell:
+    cmd: ["fish"]
+  build:
+    shell: "make build"
+    autostart: false
