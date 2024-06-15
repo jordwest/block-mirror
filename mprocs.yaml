@@ -1,6 +1,8 @@
 procs:
-  fe-shell:
+  shell:
     cmd: ["fish"]
+  gitui:
+    cmd: ["gitui"]
   build:
     shell: "make build"
     autostart: false
