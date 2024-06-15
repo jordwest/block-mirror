@@ -1,39 +1,43 @@
-import {getBrowser, TabId} from "../shared/types/webextension";
-import {createEffect, createRoot, createSignal} from "solid-js";
-
-console.log("Hello from service worker!")
-
-const siteChanged = async (tabId: TabId) => {
-    const browser = getBrowser();
-
-    const tab = await browser.tabs.get(tabId);
-
-    console.log("Tab activated", tabId, tab)
-
-
-    if (tab.url.includes('facebook.com') && !tab.url.includes('block-page.html')) {
-        return browser.tabs.update(tabId, { url: '/block-page.html?url=' + encodeURI(tab.url) });
-    }
-}
-
-getBrowser().tabs.onActivated.addListener(({ tabId }) => {
-    return siteChanged(tabId);
-});
-
-getBrowser().tabs.onUpdated.addListener((tabId, changeInfo) => {
-    if (changeInfo.url != null) {
-        return siteChanged(tabId);
-    }
-});
+import { getBrowser, TabId } from "../shared/types/webextension";
+import { createEffect, createRoot, createSignal } from "solid-js";
 
 createRoot(() => {
-    const [get, set] = createSignal('test');
+  const [bypassedUntil, setBypassedUntil] = createSignal<number | null>(null);
 
-    createEffect(() => {
-        console.log('signal changed', get());
-    })
+  const siteChanged = async (tabId: TabId) => {
+    const browser = getBrowser();
+    const tab = await browser.tabs.get(tabId);
 
-    setTimeout(() => {
-        set('changed');
-    }, 1000)
-})
+    const isActive = bypassedUntil() == null || bypassedUntil()! < Date.now();
+
+    if (
+      isActive &&
+      tab.url.includes("facebook.com") &&
+      !tab.url.includes("block-page.html")
+    ) {
+      return browser.tabs.update(tabId, {
+        url: "/block-page.html?url=" + encodeURI(tab.url),
+      });
+    }
+  };
+
+  getBrowser().tabs.onActivated.addListener(({ tabId }) => {
+    return siteChanged(tabId);
+  });
+
+  getBrowser().tabs.onUpdated.addListener((tabId, changeInfo) => {
+    if (changeInfo.url != null) {
+      return siteChanged(tabId);
+    }
+  });
+
+  getBrowser().runtime.onMessage.addListener(
+    (message: ExtensionMessage, sender, sendResponse) => {
+      if (message.type === "submitReason") {
+        console.log("reason submitted", message.reason);
+        setBypassedUntil(Date.now() + 1000 * 60 * 5);
+        sendResponse();
+      }
+    },
+  );
+});

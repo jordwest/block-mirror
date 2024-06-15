@@ -1,4 +1,4 @@
-.PHONY: install bundle block-page service-worker
+.PHONY: clean install block-page service-worker
 
 build: target/manifest.json block-page service-worker
 
@@ -22,5 +22,3 @@ block-page:
 service-worker:
 	npx vite build packages/service-worker
 	cp dist/service-worker/service-worker.js target/service-worker.js
-	#npx rollup --config src/service-worker/rollup.config.mjs
-	#cp dist/esm/service-worker.js target/service-worker.js
